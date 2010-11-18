@@ -3,25 +3,29 @@ from pygame.locals import *
 import osc
 import sys
 
+CLOCKWISE         = True
+COUNTER_CLOCKWISE = False
+
+board_address     = '192.168.1.8'
+board_port        = 10000
+laser_address     = 4
+servos = ({
+    'axis':   'y',
+    'address': 0,
+    'start':   -500,
+    'end':     1300,
+    'speed':   500,
+    'direction': CLOCKWISE,
+    },{
+    'axis':   'x',
+    'address': 1,
+    'start':   -500,
+    'end':     1300,
+    'speed':   500,
+    'direction': COUNTER_CLOCKWISE,
+})
+
 class App():
-    servos = (
-        {
-            'axis':   'y',
-            'address': 0,
-            'start':   -500,
-            'end':     1300,
-            'speed':   500,
-            'direction': True,
-        },{
-            'address': 1,
-            'start':   -500,
-            'end':     1300,
-            'speed':   500,
-            'direction': False,
-            },
-        )
-    board_address = '192.168.1.8'
-    board_port    = 10000
 
     def __init__(self):
         pygame.init()
@@ -30,11 +34,15 @@ class App():
 
         osc.init()
         bundle = osc.createBundle()
-        osc.appendToBundle(bundle, "/digitalout/4/value",[1])
-        for servo in self.servos:
+        osc.appendToBundle(bundle, "/digitalout/%i/value" % laser_address,[1])
+        for servo in servos:
             servo['range'] = self._range(servo)
-            osc.appendToBundle(bundle, "/digitalout/%i/speed" % servo['address'], [servo['speed']])
-        osc.sendBundle(bundle, self.board_address, self.board_port)
+            osc.appendToBundle(
+                bundle,
+                "/digitalout/%i/speed" % servo['address'],
+                [servo['speed']]
+            )
+        osc.sendBundle(bundle, board_address, board_port)
 
     @staticmethod
     def _range(servo):
@@ -45,18 +53,25 @@ class App():
             while True:
                 for event in pygame.event.get():
                     if event.type == pygame.USEREVENT:
-                        x, y = pygame.mouse.get_pos()
-                        px, py  = float(x) / self._screen.get_width(), float(y) / self._screen.get_height()
-                        bundle = osc.createBundle()
-                        for servo in self.servos:
-                            osc.appendToBundle(bundle, "/servo/%i/position" % servo['address'], [servo['range'](1 - py if servo['direction'] else py)])
-                        osc.sendBundle(bundle, self.board_address, self.board_port)
-                        
+                        self.update_servos()
 
         except(KeyboardInterrupt, SystemExit):
             print "\nShutting down, sending close signals"
-            osc.sendMsg("/digitalout/4/value",[0], self.board_address, self.board_port)
+            osc.sendMsg("/digitalout/%i/value" % laser_address, [0], board_address, board_port)
             sys.exit()
+
+    def update_servos(self):
+        x, y = pygame.mouse.get_pos()
+        px, py  = float(x) / self._screen.get_width(), float(y) / self._screen.get_height()
+        bundle = osc.createBundle()
+        for servo in servos:
+            p = px if servo['axis'] == 'x' else py
+            osc.appendToBundle(
+                bundle,
+                "/servo/%i/position" % servo['address'],
+                [servo['range'](1 - p if servo['direction'] else p)]
+            )
+        osc.sendBundle(bundle, board_address, board_port)
 
 
 if __name__ == '__main__':
