@@ -5,31 +5,30 @@ import sys
 
 CLOCKWISE         = True
 COUNTER_CLOCKWISE = False
+BOARD_ADDRESS     = '192.168.1.8'
+BOARD_PORT        = 10000
 
-board_address     = '192.168.1.8'
-board_port        = 10000
-laser_address     = 4
+laser_address     = 0
 servos = ({
     'axis':   'y',
     'address': 0,
-    'start':   -500,
-    'end':     1300,
-    'speed':   500,
-    'direction': CLOCKWISE,
+    'start':   -200,
+    'end':     800,
+    'speed':   200,
+    'direction': COUNTER_CLOCKWISE,
     },{
     'axis':   'x',
     'address': 1,
     'start':   -500,
-    'end':     1300,
-    'speed':   500,
-    'direction': COUNTER_CLOCKWISE,
+    'end':     1200,
+    'speed':   200,
+    'direction': CLOCKWISE,
 })
 
 class App():
-
     def __init__(self):
         pygame.init()
-        self._screen = pygame.display.set_mode((500, 500))
+        self._screen = pygame.display.set_mode((1000, 1000))
         pygame.time.set_timer(pygame.USEREVENT, 20)
 
         osc.init()
@@ -42,7 +41,7 @@ class App():
                 "/digitalout/%i/speed" % servo['address'],
                 [servo['speed']]
             )
-        osc.sendBundle(bundle, board_address, board_port)
+        osc.sendBundle(bundle, BOARD_ADDRESS, BOARD_PORT)
 
     @staticmethod
     def _range(servo):
@@ -57,7 +56,7 @@ class App():
 
         except(KeyboardInterrupt, SystemExit):
             print "\nShutting down, sending close signals"
-            osc.sendMsg("/digitalout/%i/value" % laser_address, [0], board_address, board_port)
+            osc.sendMsg("/digitalout/%i/value" % laser_address, [0], BOARD_ADDRESS, BOARD_PORT)
             sys.exit()
 
     def update_servos(self):
@@ -71,7 +70,7 @@ class App():
                 "/servo/%i/position" % servo['address'],
                 [servo['range'](1 - p if servo['direction'] else p)]
             )
-        osc.sendBundle(bundle, board_address, board_port)
+        osc.sendBundle(bundle, BOARD_ADDRESS, BOARD_PORT)
 
 
 if __name__ == '__main__':
