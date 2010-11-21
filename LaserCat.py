@@ -1,7 +1,7 @@
-import pygame
-from pygame.locals import *
 import osc
 import sys
+
+from bottle import route, run, request, post, static_file
 
 CLOCKWISE         = True
 COUNTER_CLOCKWISE = False
@@ -25,12 +25,9 @@ servos = ({
     'direction': CLOCKWISE,
 })
 
-class App():
+class OSCApp():
     def __init__(self):
-        pygame.init()
-        self._screen = pygame.display.set_mode((1000, 1000))
-        pygame.time.set_timer(pygame.USEREVENT, 20)
-
+        """
         osc.init()
         bundle = osc.createBundle()
         osc.appendToBundle(bundle, "/digitalout/%i/value" % laser_address,[1])
@@ -42,26 +39,17 @@ class App():
                 [servo['speed']]
             )
         osc.sendBundle(bundle, BOARD_ADDRESS, BOARD_PORT)
+        """
+        pass
 
     @staticmethod
     def _range(servo):
         return lambda percent: int(servo['start'] - (servo['start'] - servo['end']) * percent)
 
-    def run(self):
-        try:
-            while True:
-                for event in pygame.event.get():
-                    if event.type == pygame.USEREVENT:
-                        self.update_servos()
-
-        except(KeyboardInterrupt, SystemExit):
-            print "\nShutting down, sending close signals"
-            osc.sendMsg("/digitalout/%i/value" % laser_address, [0], BOARD_ADDRESS, BOARD_PORT)
-            sys.exit()
-
-    def update_servos(self):
-        x, y = pygame.mouse.get_pos()
-        px, py  = float(x) / self._screen.get_width(), float(y) / self._screen.get_height()
+    def update_servos(self, x, y):
+        #x, y = pygame.mouse.get_pos()
+        px, py  = float(x) / 100, float(y) / 100
+        """
         bundle = osc.createBundle()
         for servo in servos:
             p = px if servo['axis'] == 'x' else py
@@ -71,8 +59,30 @@ class App():
                 [servo['range'](1 - p if servo['direction'] else p)]
             )
         osc.sendBundle(bundle, BOARD_ADDRESS, BOARD_PORT)
+        """
+        return {
+            'x': px,
+            'y': py,
+        }
+
+    def shutdown(self):
+        print "\nShutting down, sending close signals"
+        osc.sendMsg("/digitalout/%i/value" % laser_address, [0], BOARD_ADDRESS, BOARD_PORT)
+        sys.exit()
 
 
-if __name__ == '__main__':
-    app = App()
-    app.run()
+osc_app = OSCApp()
+
+@route('/')
+def index():
+    return static_file('index.html', './static/')
+
+@route('/ajax/update/')
+def ajax_update():
+    return osc_app.update_servos(20, 50)
+
+@route('/static/:filename')
+def static(filename):
+    return static_file(filename, './static/')
+
+run()

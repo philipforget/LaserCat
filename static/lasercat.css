@@ -1,0 +1,14 @@
+*, html, body, div, ul, ol, li, p, span, a, img, h1, h2, h3 {
+	margin: 0;
+	padding: 0;
+	border: none;
+	text-decoration: none;
+}
+
+body {
+	background: black;
+}
+
+h1 {
+	color: white;
+}
