@@ -12,3 +12,9 @@ body {
 h1 {
 	color: white;
 }
+
+#control {
+	background: red;
+	width: 300px;
+	height: 300px;
+}

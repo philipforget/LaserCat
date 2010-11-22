@@ -47,12 +47,11 @@ class OSCApp():
         return lambda percent: int(servo['start'] - (servo['start'] - servo['end']) * percent)
 
     def update_servos(self, x, y):
-        #x, y = pygame.mouse.get_pos()
-        px, py  = float(x) / 100, float(y) / 100
         """
+        #x, y = pygame.mouse.get_pos()
         bundle = osc.createBundle()
         for servo in servos:
-            p = px if servo['axis'] == 'x' else py
+            p = x if servo['axis'] == 'x' else y
             osc.appendToBundle(
                 bundle,
                 "/servo/%i/position" % servo['address'],
@@ -61,8 +60,8 @@ class OSCApp():
         osc.sendBundle(bundle, BOARD_ADDRESS, BOARD_PORT)
         """
         return {
-            'x': px,
-            'y': py,
+            'x': x,
+            'y': y,
         }
 
     def shutdown(self):
@@ -77,9 +76,16 @@ osc_app = OSCApp()
 def index():
     return static_file('index.html', './static/')
 
-@route('/ajax/update/')
+@post('/ajax/update/')
 def ajax_update():
-    return osc_app.update_servos(20, 50)
+    x, y = request.forms.get('x'), request.forms.get('y')
+    try:
+        x = float(x)
+        y = float(y)
+        return osc_app.update_servos(x, y)
+
+    except:
+        return { 'success': False }
 
 @route('/static/:filename')
 def static(filename):
