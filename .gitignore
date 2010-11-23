@@ -3,3 +3,6 @@
 *.tmp
 *.sqlite
 *.bak
+bin
+lib
+include

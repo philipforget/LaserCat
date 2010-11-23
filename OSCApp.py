@@ -1,7 +1,5 @@
-import osc
 import sys
-
-from bottle import route, run, request, post, static_file
+import osc
 
 CLOCKWISE         = True
 COUNTER_CLOCKWISE = False
@@ -27,10 +25,9 @@ servos = ({
 
 class OSCApp():
     def __init__(self):
-        """
         osc.init()
         bundle = osc.createBundle()
-        osc.appendToBundle(bundle, "/digitalout/%i/value" % laser_address,[1])
+        self.set_laser(False)
         for servo in servos:
             servo['range'] = self._range(servo)
             osc.appendToBundle(
@@ -39,16 +36,12 @@ class OSCApp():
                 [servo['speed']]
             )
         osc.sendBundle(bundle, BOARD_ADDRESS, BOARD_PORT)
-        """
-        pass
 
     @staticmethod
     def _range(servo):
         return lambda percent: int(servo['start'] - (servo['start'] - servo['end']) * percent)
 
     def update_servos(self, x, y):
-        """
-        #x, y = pygame.mouse.get_pos()
         bundle = osc.createBundle()
         for servo in servos:
             p = x if servo['axis'] == 'x' else y
@@ -58,37 +51,17 @@ class OSCApp():
                 [servo['range'](1 - p if servo['direction'] else p)]
             )
         osc.sendBundle(bundle, BOARD_ADDRESS, BOARD_PORT)
-        """
+
         return {
             'x': x,
             'y': y,
         }
 
-    def shutdown(self):
-        print "\nShutting down, sending close signals"
-        osc.sendMsg("/digitalout/%i/value" % laser_address, [0], BOARD_ADDRESS, BOARD_PORT)
-        sys.exit()
+    def toggle_laser(self):
+        return self.set_laser(not self.laser_state)
 
-
-osc_app = OSCApp()
-
-@route('/')
-def index():
-    return static_file('index.html', './static/')
-
-@post('/ajax/update/')
-def ajax_update():
-    x, y = request.forms.get('x'), request.forms.get('y')
-    try:
-        x = float(x)
-        y = float(y)
-        return osc_app.update_servos(x, y)
-
-    except:
-        return { 'success': False }
-
-@route('/static/:filename')
-def static(filename):
-    return static_file(filename, './static/')
-
-run()
+    def set_laser(self, state):
+        self.laser_state = state
+        int_state = 1 if self.laser_state else 0
+        osc.sendMsg("/digitalout/%i/value" % laser_address, [int_state], BOARD_ADDRESS, BOARD_PORT)
+        return self.laser_state

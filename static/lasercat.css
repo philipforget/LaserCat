@@ -18,3 +18,7 @@ h1 {
 	width: 300px;
 	height: 300px;
 }
+
+#control.active {
+	background: green;
+}

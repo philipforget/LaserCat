@@ -1,0 +1,12 @@
+<VirtualHost *:80>
+    ServerName lasercat.com
+    WSGIDaemonProcess lasercat user=username group=groupname processes=1 threads=5
+    WSGIScriptAlias /..path_to../LaserCat/LaserCat.wsgi.py
+
+    <Directory /..path_to../LaserCat>
+        WSGIProcessGroup lasercat
+        WSGIApplicationGroup %{GLOBAL}
+        Order deny,allow
+        Allow from all
+    </Directory>
+</VirtualHost>
